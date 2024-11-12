@@ -39,6 +39,38 @@ def display_image_selector(image_urls):
         st.image(selected_image_url, caption="Imagen seleccionada", use_column_width=True)
         return selected_image, selected_image_url
 
+# Función para obtener etiquetas de la imagen
+def get_tags_for_image(image_url):
+    conn = create_connection()
+    cursor = conn.cursor()
+    try:
+        # Obtener el ID de la imagen
+        cursor.execute("SELECT ID FROM images WHERE image_url = %s", (image_url,))
+        image_id = cursor.fetchone()[0]
+
+        # Obtener las etiquetas asociadas a la imagen
+        cursor.execute("""
+            SELECT t.TAG 
+            FROM TAGS t
+            JOIN IMAGE_TAGS it ON t.ID = it.TAG_ID
+            WHERE it.IMAGE_ID = %s
+        """, (image_id,))
+        tags = cursor.fetchall()
+        return [row[0] for row in tags]
+    finally:
+        cursor.close()
+        conn.close()
+
+# Función para mostrar etiquetas en formato "tag"
+def display_tags(tags):
+    if tags:
+        st.subheader("Etiquetas asignadas:")
+        for tag in tags:
+            # Mostrar cada etiqueta como un "tag" con una "X"
+            st.markdown(f'<span style="background-color: #e0e0e0; padding: 5px; border-radius: 5px;">{tag} <span style="color: red; cursor: pointer;">X</span></span>', unsafe_allow_html=True)
+    else:
+        st.write("No hay etiquetas asignadas a esta imagen.")
+
 # Función para agregar etiqueta a la imagen
 def add_tag_to_image(image_url, tag):
     conn = create_connection()
@@ -88,13 +120,10 @@ def main():
     if image_urls:
         selected_image, selected_image_url = display_image_selector(image_urls)
         
-        # Campo para ingresar nueva etiqueta
-        new_tag = st.text_input("Agregar nueva etiqueta a la imagen seleccionada:")
-        if st.button("Agregar etiqueta"):
-            if new_tag:
-                add_tag_to_image(selected_image_url, new_tag)
-            else:
-                st.warning("Por favor, ingresa una etiqueta.")
+        # Mostrar etiquetas de la imagen seleccionada
+        if selected_image_url:
+            tags = get_tags_for_image(selected_image_url)
+            display_tags(tags)  # Llamar a la nueva función para mostrar las etiquetas
 
 if __name__ == "__main__":
     main()
