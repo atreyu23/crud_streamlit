@@ -7,7 +7,7 @@ WORKDIR /app
 # Copiar el archivo environment.yml al contenedor
 COPY environment.yml .
 
-# Crear el entorno de Conda y activar
+# Crear el entorno de Conda y activarlo
 RUN conda env create -f environment.yml
 
 # Activar el entorno y establecerlo como el entorno predeterminado
