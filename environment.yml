@@ -1,0 +1,14 @@
+name: crud_app
+channels:
+  - defaults
+dependencies:
+  - python=3.9
+  - streamlit
+  - snowflake-connector-python
+  - snowflake-snowpark-python
+  - pandas
+  - python-dotenv
+  - pip
+  - pip:
+      - snowflake-sqlalchemy
+      - python-dotenv
