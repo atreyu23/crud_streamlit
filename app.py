@@ -123,7 +123,16 @@ def main():
         # Mostrar etiquetas de la imagen seleccionada
         if selected_image_url:
             tags = get_tags_for_image(selected_image_url)
-            display_tags(tags)  # Llamar a la nueva función para mostrar las etiquetas
+            display_tags(tags)  # Llamar a la función para mostrar las etiquetas
+
+            new_tag = st.text_input("Añadir nueva etiqueta:")
+
+            if st.button("Añadir etiqueta"):
+                if new_tag:
+                    add_tag_to_image(selected_image_url, new_tag)  # Función para añadir la etiqueta
+                    
+                    # Recargar la página para mostrar la imagen seleccionada con etiquetas actualizadas
+                    st.rerun()  # Recargar la aplicación
 
 if __name__ == "__main__":
     main()
