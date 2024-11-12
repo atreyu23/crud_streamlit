@@ -1,0 +1,7 @@
+version: '3.8'
+
+services:
+  web:
+    image: streamlitcontainerrgp.azurecr.io/webimage:latest
+    ports:
+      - "80:8501"  # Mapea el puerto 8501 del contenedor al puerto 80 de la aplicación web
