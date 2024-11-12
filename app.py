@@ -31,14 +31,52 @@ def get_images():
 
 # Función para mostrar un selector de imágenes
 def display_image_selector(image_urls):
-    # Extraer solo los nombres de los archivos
     image_filenames = [os.path.basename(url) for url in image_urls]
     selected_image = st.selectbox("Selecciona una imagen:", image_filenames)
     
-    # Obtener la URL completa del archivo seleccionado
     if selected_image:
         selected_image_url = image_urls[image_filenames.index(selected_image)]
         st.image(selected_image_url, caption="Imagen seleccionada", use_column_width=True)
+        return selected_image, selected_image_url
+
+# Función para agregar etiqueta a la imagen
+def add_tag_to_image(image_url, tag):
+    conn = create_connection()
+    cursor = conn.cursor()
+    try:
+        # Verificar si la etiqueta ya existe
+        cursor.execute("SELECT ID FROM TAGS WHERE TAG = %s", (tag,))
+        tag_result = cursor.fetchone()
+
+        if tag_result:
+            tag_id = tag_result[0]  # Obtener el ID de la etiqueta existente
+        else:
+            # Si no existe, insertarla en la tabla TAGS
+            cursor.execute("INSERT INTO TAGS (TAG) VALUES (%s)", (tag,))
+            conn.commit()
+            # Obtener el ID de la etiqueta recién creada
+            cursor.execute("SELECT ID FROM TAGS WHERE TAG = %s", (tag,))
+            tag_id = cursor.fetchone()[0]
+
+        # Obtener el ID de la imagen
+        cursor.execute("SELECT ID FROM images WHERE image_url = %s", (image_url,))
+        image_id = cursor.fetchone()[0]
+
+        # Verificar si la etiqueta ya está asignada a la imagen
+        cursor.execute("SELECT * FROM IMAGE_TAGS WHERE IMAGE_ID = %s AND TAG_ID = %s", (image_id, tag_id))
+        existing_assignment = cursor.fetchone()
+
+        if existing_assignment:
+            st.warning("La etiqueta ya está asignada a esta imagen.")
+        else:
+            # Insertar en la tabla IMAGE_TAGS
+            cursor.execute("INSERT INTO IMAGE_TAGS (IMAGE_ID, TAG_ID) VALUES (%s, %s)", (image_id, tag_id))
+            conn.commit()
+            st.success("Etiqueta añadida exitosamente a la imagen.")
+        
+    finally:
+        cursor.close()
+        conn.close()
 
 def main():
     st.title("Aplicación CRUD con Streamlit y Snowflake")
@@ -48,9 +86,15 @@ def main():
     
     # Mostrar el selector de imágenes
     if image_urls:
-        display_image_selector(image_urls)
-    else:
-        st.write("No se encontraron imágenes.")
+        selected_image, selected_image_url = display_image_selector(image_urls)
+        
+        # Campo para ingresar nueva etiqueta
+        new_tag = st.text_input("Agregar nueva etiqueta a la imagen seleccionada:")
+        if st.button("Agregar etiqueta"):
+            if new_tag:
+                add_tag_to_image(selected_image_url, new_tag)
+            else:
+                st.warning("Por favor, ingresa una etiqueta.")
 
 if __name__ == "__main__":
     main()
