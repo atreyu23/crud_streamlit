@@ -62,12 +62,16 @@ def get_tags_for_image(image_url):
         conn.close()
 
 # Función para mostrar etiquetas en formato "tag"
-def display_tags(tags):
+def display_tags(tags, selected_image_url):
     if tags:
         st.subheader("Etiquetas asignadas:")
         for tag in tags:
-            # Mostrar cada etiqueta como un "tag" con una "X"
-            st.markdown(f'<span style="background-color: #e0e0e0; padding: 5px; border-radius: 5px;">{tag} <span style="color: red; cursor: pointer;">X</span></span>', unsafe_allow_html=True)
+            # Crear un enlace con la etiqueta y la "X"
+            tag_with_remove = f"{tag}  ❌"  # Usamos un emoji de "X"
+            if st.button(tag_with_remove, key=tag):  # Usamos el texto de la etiqueta como botón
+                remove_tag_from_image(selected_image_url, tag)  # Llama a la función para eliminar la etiqueta
+                st.rerun()  # Recargar la aplicación
+            # st.markdown(f'<span style="background-color: #e0e0e0; padding: 5px; border-radius: 5px;">{tag_with_remove}</span>', unsafe_allow_html=True)
     else:
         st.write("No hay etiquetas asignadas a esta imagen.")
 
@@ -110,7 +114,30 @@ def add_tag_to_image(image_url, tag):
         cursor.close()
         conn.close()
 
+def remove_tag_from_image(image_url, tag):
+    conn = create_connection()
+    cursor = conn.cursor()
+    try:
+        # Obtener el ID de la imagen
+        cursor.execute("SELECT ID FROM images WHERE image_url = %s", (image_url,))
+        image_id = cursor.fetchone()[0]
+
+        # Obtener el ID de la etiqueta
+        cursor.execute("SELECT ID FROM TAGS WHERE TAG = %s", (tag,))
+        tag_id = cursor.fetchone()[0]
+
+        # Eliminar la asociación de la tabla IMAGE_TAGS
+        cursor.execute("DELETE FROM IMAGE_TAGS WHERE IMAGE_ID = %s AND TAG_ID = %s", (image_id, tag_id))
+        conn.commit()
+        st.success(f"Etiqueta '{tag}' eliminada exitosamente de la imagen.")
+        
+    finally:
+        cursor.close()
+        conn.close()
+
 def main():
+    if 'new_tag' not in st.session_state:
+        st.session_state.new_tag = ""  # Inicializar el estado si no existe
     st.title("Aplicación CRUD con Streamlit y Snowflake")
     
     # Obtener las imágenes
@@ -123,15 +150,15 @@ def main():
         # Mostrar etiquetas de la imagen seleccionada
         if selected_image_url:
             tags = get_tags_for_image(selected_image_url)
-            display_tags(tags)  # Llamar a la función para mostrar las etiquetas
-
-            new_tag = st.text_input("Añadir nueva etiqueta:")
+            display_tags(tags, selected_image_url)
+            
+            new_tag = st.text_input("Añadir nueva etiqueta:", \
+                         value=st.session_state.new_tag, key="new_tag_input")
 
             if st.button("Añadir etiqueta"):
                 if new_tag:
                     add_tag_to_image(selected_image_url, new_tag)  # Función para añadir la etiqueta
-                    
-                    # Recargar la página para mostrar la imagen seleccionada con etiquetas actualizadas
+                    st.session_state.new_tag = ""  # Restablecer el valor del input a vacío
                     st.rerun()  # Recargar la aplicación
 
 if __name__ == "__main__":
