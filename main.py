@@ -7,6 +7,7 @@ import os
 load_dotenv()
 
 # Snowflake connection parameters
+
 connection_parameters = {
     "account": os.getenv("SNOWFLAKE_ACCOUNT"),
     "user": os.getenv("SNOWFLAKE_USER"),
